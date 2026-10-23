@@ -1,0 +1,475 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Assistant IA</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #ffffff;
+            color: #202123;
+        }
+
+        .layout {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            background: #f7f7f8;
+            padding: 20px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            border-right: 1px solid #e5e5e5;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 8px;
+        }
+
+        .new-chat {
+            display: block;
+            text-decoration: none;
+            text-align: center;
+            border: 1px solid #d9d9e3;
+            border-radius: 9px;
+            padding: 12px;
+            color: #202123;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .new-chat:hover {
+            background: #eeeeF2;
+        }
+
+        .sidebar-title {
+            color: #6e6e80;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 10px 8px 0;
+        }
+
+        .history {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .history a {
+            color: #343541;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        .history a:hover,
+        .history a.active {
+            background: #5fc446;
+        }
+
+        .main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .topbar {
+            padding: 18px 24px;
+            border-bottom: 1px solid #5ecb4d;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .delete-conversation {
+            border: 1px solid #b42318;
+            border-radius: 8px;
+            padding: 9px 12px;
+            color: #b42318;
+            background: white;
+            cursor: pointer;
+            font: inherit;
+            font-size: 13px;
+        }
+
+        .delete-conversation:hover {
+            background: #fff1f0;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 20px;
+        }
+
+        .welcome {
+            text-align: center;
+            margin: 100px auto 30px;
+            max-width: 600px;
+        }
+
+        .welcome h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .message {
+            max-width: 760px;
+            margin: 0 auto 24px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            line-height: 1.7;
+        }
+
+        .avatar {
+            width: 60px;
+            height: 54px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: #afd7b3;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .message-content {
+            flex: 1;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+            padding-top: 5px;
+        }
+
+        .composer-area {
+            padding: 12px 20px 20px;
+        }
+
+        .composer {
+            max-width: 760px;
+            margin: auto;
+            border: 1px solid #1bc034;
+            border-radius: 16px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            box-shadow: 0 2px 8px #00000008;
+        }
+
+        textarea {
+            flex: 1;
+            border: 0;
+            outline: none;
+            resize: none;
+            font: inherit;
+            font-size: 15px;
+            padding: 8px;
+            max-height: 180px;
+            min-height: 40px;
+        }
+
+        .send {
+            border: none;
+            border-radius: 10px;
+            background: #202123;
+            color: white;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .send:disabled {
+            opacity: 0.5;
+            cursor: wait;
+        }
+
+        .notice {
+            max-width: 760px;
+            margin: 8px auto;
+            color: #b42318;
+            font-size: 14px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #56c16f;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 650px) {
+            .sidebar {
+                width: 175px;
+                padding: 12px 8px;
+            }
+
+            .brand {
+                font-size: 16px;
+            }
+
+            .topbar {
+                padding: 16px;
+                flex-wrap: wrap;
+            }
+
+            .messages {
+                padding: 20px 12px;
+            }
+
+            .welcome {
+                margin-top: 50px;
+            }
+
+            .composer-area {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="brand">💬ECOBES </div>
+
+        <form method="post" action="{% url 'chat:new_conversation' %}">
+            {% csrf_token %}
+            <button class="new-chat" type="submit">
+                ＋ Nouvelle conversation
+            </button>
+        </form>
+
+        <div class="sidebar-title">Historique</div>
+
+        <nav class="history">
+            {% for conversation in conversations %}
+                <a
+                    href="{% url 'chat:index' %}?conversation={{ conversation.id }}"
+                    class="{% if conversation.id == active_conversation.id %}active{% endif %}"
+                >
+                    {{ conversation.title }}
+                </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <span>💬Équipe ECOBES </span>
+            <form
+                id="delete-conversation-form"
+                method="post"
+                action="{% url 'chat:delete_conversation' active_conversation.id %}"
+            >
+                {% csrf_token %}
+                <button class="delete-conversation" type="submit">
+                    Supprimer cette conversation de l’historique
+                </button>
+            </form>
+        </header>
+
+        <section class="messages" id="messages">
+            {% if not messages %}
+                <div class="welcome" id="welcome">
+                    <h1>Comment puis-je t'aider ?</h1>
+                    <p>Pose une question pour commencer.</p>
+                </div>
+            {% endif %}
+
+            {% for message in messages %}
+                <div class="message">
+                    <div class="avatar">
+                        {% if message.role == "user" %} VOUS{% else %} ECOBES{% endif %}
+                    </div>
+                    <div class="message-content">{{ message.content }}</div>
+                </div>
+            {% endfor %}
+        </section>
+
+        <div class="composer-area">
+            <div id="notice" class="notice" role="alert"></div>
+
+            <form class="composer" id="chat-form">
+                {% csrf_token %}
+
+                <textarea
+                    id="prompt"
+                    placeholder="pose ta question..."
+                    rows="1"
+                    maxlength="20000"
+                    required
+                ></textarea>
+
+                <button class="send" id="send" type="submit"
+                        aria-label="Envoyer"> ↑ </button>
+            </form>
+
+            <div class="footer">
+                Les réponses de l'IA peuvent contenir des erreurs.
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const form = document.getElementById("chat-form");
+    const promptInput = document.getElementById("prompt");
+    const sendButton = document.getElementById("send");
+    const messagesElement = document.getElementById("messages");
+    const notice = document.getElementById("notice");
+    const deleteForm = document.getElementById(
+        "delete-conversation-form"
+    );
+
+    deleteForm.addEventListener("submit", function(event) {
+        if (sendButton.disabled) {
+            event.preventDefault();
+            notice.textContent =
+                "Attends la fin de la réponse avant de supprimer cette conversation.";
+            return;
+        }
+
+        if (!window.confirm(
+            "Supprimer cette conversation et tous ses messages ?"
+        )) {
+            event.preventDefault();
+        }
+    });
+
+    const conversationId = {{ active_conversation.id }};
+    const csrfToken = form.querySelector(
+        '[name="csrfmiddlewaretoken"]'
+    ).value;
+
+    const sendUrl =
+        "{% url 'chat:send_message' active_conversation.id %}";
+
+    function scrollToBottom() {
+        messagesElement.scrollTop = messagesElement.scrollHeight;
+    }
+
+    function addMessage(role, content) {
+        const row = document.createElement("div");
+        row.className = "message";
+
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = role === "user" ? "VOUS" : "IA";
+
+        const text = document.createElement("div");
+        text.className = "message-content";
+
+        // textContent empêche le texte reçu d'être interprété comme HTML.
+        text.textContent = content;
+
+        row.appendChild(avatar);
+        row.appendChild(text);
+        messagesElement.appendChild(row);
+
+        scrollToBottom();
+        return text;
+    }
+
+    form.addEventListener("submit", async function(event) {
+        event.preventDefault();
+
+        const message = promptInput.value.trim();
+
+        if (!message || sendButton.disabled) {
+            return;
+        }
+
+        notice.textContent = "";
+
+        const welcome = document.getElementById("welcome");
+        if (welcome) {
+            welcome.remove();
+        }
+
+        addMessage("user", message);
+
+        promptInput.value = "";
+        promptInput.style.height = "auto";
+        sendButton.disabled = true;
+
+        const pending = addMessage("assistant", "Réflexion en cours...");
+
+        try {
+            const response = await fetch(sendUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                pending.textContent = "La réponse n'a pas pu être générée.";
+                notice.textContent = data.error || "Une erreur est survenue.";
+                return;
+            }
+
+            pending.textContent = data.answer;
+
+            // Actualiser l'historique latéral avec le titre éventuel.
+            // Le rechargement est volontairement évité ici.
+        } catch (error) {
+            pending.textContent = "Connexion impossible.";
+            notice.textContent =
+                "Vérifie que le serveur Django fonctionne et réessaie.";
+        } finally {
+            sendButton.disabled = false;
+            promptInput.focus();
+            scrollToBottom();
+        }
+    });
+
+    promptInput.addEventListener("input", function() {
+        promptInput.style.height = "auto";
+        promptInput.style.height =
+            Math.min(promptInput.scrollHeight, 180) + "px";
+    });
+
+    promptInput.addEventListener("keydown", function(event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            form.requestSubmit();
+        }
+    });
+
+    scrollToBottom();
+</script>
+</body>
+</html>
