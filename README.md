@@ -1,4 +1,4 @@
-# Assistant conversationnel — projet d'équipe
+# Assistant conversationnel - projet d'équipe
 
 Cette application Web permet de discuter avec un modèle d'IA via l'API Ollama.
 Elle est construite avec Django et conserve les conversations et leurs messages
