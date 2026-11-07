@@ -1,34 +1,44 @@
-# Assistant conversationnel - projet d'équipe
+# Assistant conversationnel — projet d'équipe
 
-Cette application Web permet de discuter avec un modèle d'IA via l'API Ollama.
-Elle est construite avec Django et conserve les conversations et leurs messages
-dans une base de données SQLite locale. Les questions sont aussi confrontées aux
-documents et aux données de `Base_de_connaissance/`; les extraits pertinents sont
-envoyés au modèle avec la question pour qu'il puisse fonder sa réponse sur les
-sources du projet.
+Cette application Web permet de discuter avec le modèle local
+`liquid/lfm2-1.2b` dans Bionic (LM Studio), via son API locale compatible avec
+OpenAI. Elle est construite avec Django et conserve les conversations et leurs
+messages dans une base de données SQLite locale. Les questions sont aussi
+confrontées aux documents et aux données de `Base_de_connaissance/`; les extraits
+pertinents sont envoyés au modèle avec la question pour qu'il puisse fonder sa
+réponse sur les sources du projet.
 
 ## Fonctionnalités
 
 - Créer et sélectionner des conversations.
-- Envoyer un message au modèle Ollama et afficher sa réponse.
+- Envoyer un message au modèle local Bionic et afficher sa réponse.
 - Conserver l'historique des messages de chaque conversation.
 - Supprimer une conversation et tous ses messages associés.
-- Charger localement une clé d'API Ollama depuis `config.json`.
 - Rechercher des passages utiles dans les fichiers PDF, Word, CSV et JSONL de
   la base de connaissances et les fournir au modèle avec leurs références;
   `QuestionsReponsesSources.docx` est exclu de cette recherche.
+- Prioriser les extraits de la base de connaissances locale dans la réponse.
 
 La recherche est lexicale (classement BM25), sans service externe d'indexation.
-Les fichiers structurés sont lus localement; les trois PDF dont le nom correspond
-le mieux aux termes de la question sont extraits afin d'éviter d'analyser tous
-les PDF à chaque sujet. Les index sont conservés en mémoire et l'extraction PDF
-est mise en cache pendant la vie du processus. Redémarrer Django pour prendre
-en compte les modifications aux fichiers de la base. La recherche ne fait pas
-d'OCR : un PDF composé seulement d'images ne fournira pas de texte exploitable.
+Les fichiers structurés sont lus localement; seuls les PDF dont le nom
+correspond le mieux à la question sont extraits, jusqu'à trois par requête.
+L'indexation ignore les en-têtes et pieds de page répétés, les courtes pages de
+garde, les tables des matières et les bibliographies; elle évite aussi de
+retourner plusieurs passages chevauchants de la même page. Les index sont
+conservés en mémoire et l'extraction PDF est mise en cache pendant la vie du
+processus. Redémarrer Django pour prendre en compte les modifications aux
+fichiers de la base. La recherche ne fait pas d'OCR : un PDF composé seulement
+d'images ne fournira pas de texte exploitable. Pour les questions portant sur
+des mesures ou recommandations, le classement privilégie aussi les tableaux PDF
+de moyens proposés. Les références exactes des passages sont ajoutées à la
+réponse si le modèle ne les cite pas lui-même.
 
-La question et les extraits retrouvés sont envoyés à l'API distante Ollama
-configurée par l'application. N'utilise pas cette fonction avec des données
-confidentielles sans vérifier les règles de traitement des données applicables.
+Le modèle local utilise l'API Bionic/LM Studio sur
+`http://127.0.0.1:1234/v1`. Les paramètres `BIONIC_API_BASE_URL` et
+`BIONIC_MODEL` se trouvent dans `assistant_project/settings.py`. Avant d'utiliser
+le chat, démarre le serveur local Bionic/LM Studio (par exemple avec
+`& "$env:USERPROFILE\.lmstudio\bin\lms.exe" server start --port 1234`). Le serveur
+est lié à `127.0.0.1` et n'est donc pas exposé au réseau local.
 
 ## Arborescence
 
@@ -39,7 +49,6 @@ projet_equipe/
 ├── Lancer_appli.bat
 ├── manage.py
 ├── requirements.txt
-├── config.json                     # Configuration locale, non versionnée
 ├── db.sqlite3                      # Base de données locale, non versionnée
 ├── .venv/                          # Environnement Python local, non versionné
 ├── assistant_project/
@@ -103,12 +112,11 @@ Git et recréables; ils ne font pas partie des sources à maintenir.
 
 | Fichier ou répertoire | Rôle |
 | --- | --- |
-| `.gitignore` | Exclut de Git l'environnement virtuel, les caches Python, la base de données locale, `config.json` et les fichiers temporaires de déploiement. |
+| `.gitignore` | Exclut de Git l'environnement virtuel, les caches Python, la base de données locale et les fichiers temporaires de déploiement. |
 | `README.md` | Présente le projet, son arborescence, les fichiers et les consignes d'exécution. |
 | `Lancer_appli.bat` | Ouvre l'application dans le navigateur et démarre le serveur Django local avec l'interpréteur de `.venv`. |
 | `manage.py` | Point d'entrée des commandes Django, par exemple pour lancer le serveur, appliquer les migrations ou exécuter les tests. |
 | `requirements.txt` | Déclare les dépendances Python de l'application : Django, Requests et PyMuPDF pour extraire le texte des PDF. |
-| `config.json` | Configuration locale contenant la clé `OLLAMA_API_KEY` utilisée pour authentifier les appels à l'API. Ce fichier est ignoré par Git; ne partage pas et ne versionne pas une vraie clé. |
 | `db.sqlite3` | Base SQLite de développement où Django conserve les conversations, les messages et ses autres données locales. Le fichier est ignoré par Git. |
 | `.venv/` | Environnement virtuel Python local avec les dépendances installées. Il est ignoré par Git et peut être recréé. |
 
@@ -128,8 +136,8 @@ Git et recréables; ils ne font pas partie des sources à maintenir.
 | --- | --- |
 | `__init__.py` | Marque `chat` comme paquet Python. Ce fichier vide est conservé pour la découverte et l'importation du paquet. |
 | `models.py` | Définit les modèles `Conversation` et `Message`, leurs champs, relations et ordres d'affichage. |
-| `knowledge_base.py` | Extrait les textes PDF/Word et les données CSV/JSONL, évite les doublons CSV/JSONL, sélectionne des PDF d'après les termes de la question, découpe et classe les passages pertinents avec BM25. |
-| `views.py` | Gère l'affichage du chat, la création et la suppression de conversations, la validation des messages et les échanges avec l'API Ollama. |
+| `knowledge_base.py` | Extrait les textes PDF/Word et les données CSV/JSONL, évite les doublons CSV/JSONL, sélectionne des PDF d'après les termes de la question, découpe et classe les passages pertinents avec BM25 et privilégie les tableaux de mesures pour les questions de recommandations. |
+| `views.py` | Gère l'affichage du chat, les conversations, la validation des messages, la recherche locale, les références aux sources et les échanges avec l'API locale Bionic/LM Studio. |
 | `urls.py` | Associe les routes Web et API de l'application à leurs vues. |
 | `tests.py` | Vérifie les comportements de suppression de conversation et les routes associées. |
 | `templates/chat/index.html` | Contient l'interface du chat : historique latéral, affichage des messages, formulaire d'envoi et bouton de suppression. |
@@ -209,25 +217,14 @@ de chat ne les modifie pas et n'effectue actuellement pas de recherche dedans.
    python -m pip install -r requirements.txt
    ```
 
-4. Créer `config.json` à la racine du projet avec la clé d'API fournie par
-   Ollama :
-
-   ```json
-   {
-     "OLLAMA_API_KEY": "ta-cle-api"
-   }
-   ```
-
-   Garde ce fichier local et ne publie pas la clé.
-
-5. Préparer la base de données et lancer le serveur :
+4. Préparer la base de données et lancer le serveur :
 
    ```powershell
    python manage.py migrate
    python manage.py runserver 127.0.0.1:8000
    ```
 
-6. Ouvrir <http://127.0.0.1:8000/>. Sous Windows, `Lancer_appli.bat` peut aussi
+5. Ouvrir <http://127.0.0.1:8000/>. Sous Windows, `Lancer_appli.bat` peut aussi
    démarrer le serveur et ouvrir le navigateur; il utilise le chemin `.venv`
    dans le dossier du projet.
 

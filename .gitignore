@@ -1,0 +1,32 @@
+
+# Environnement virtuel Python
+.venv/
+venv/
+env/
+
+# Fichiers temporaires Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Variables d'environnement et secrets
+.env
+.env.*
+!.env.example
+
+# Base de données locale
+db.sqlite3
+*.sqlite3
+
+# Fichiers Django générés
+staticfiles/
+media/
+
+# Historique R
+.Rhistory
+
+# Fichiers de configuration locaux
+.vscode/
+
+# Base de connaissances locale
+Base_de_connaissance/
